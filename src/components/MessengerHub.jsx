@@ -152,6 +152,20 @@ export default function MessengerHub({
           }
           return c;
         }));
+
+        // Dispatch outbound message to Meta via our backend relay
+        try {
+          await fetch('/api/send-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversationId: activeThread.id,
+              text: replyText
+            })
+          });
+        } catch (webhookErr) {
+          console.error('Failed to trigger outbound webhook:', webhookErr);
+        }
       } catch (err) {
         console.error('Failed to send message to database:', err);
         alert('Failed to send reply.');

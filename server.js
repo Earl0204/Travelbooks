@@ -180,6 +180,52 @@ app.post('/api/webhook', async (req, res) => {
   }
 });
 
+// Meta Send Message Endpoint (Agent Outbound replies)
+app.post('/api/send-reply', async (req, res) => {
+  const { conversationId, text } = req.body;
+
+  if (!conversationId || !text) {
+    return res.status(400).json({ error: 'Conversation ID and message text are required' });
+  }
+
+  // Get recipient PSID by stripping prefixes
+  const psid = conversationId.replace('conv-sim-', '').replace('conv-', '');
+
+  const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+  if (!pageAccessToken || pageAccessToken === 'your_meta_page_access_token_here' || pageAccessToken.trim() === '') {
+    console.log(`[Meta Simulation Mode] Outbound reply to PSID ${psid}: "${text}"`);
+    // Simulated network delay
+    await new Promise(resolve => setTimeout(resolve, 600));
+    return res.json({ 
+      success: true, 
+      simulated: true,
+      messageId: `mid.simulated:${Date.now()}` 
+    });
+  }
+
+  try {
+    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: psid },
+        message: { text: text }
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error?.message || 'Meta Send API Error');
+    }
+
+    console.log(`Meta Message Sent successfully to PSID: ${psid}. Msg ID: ${result.message_id}`);
+    res.json({ success: true, messageId: result.message_id });
+  } catch (err) {
+    console.error('Failed to send Meta message:', err);
+    res.status(500).json({ error: err.message || 'Failed to dispatch Meta message' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server listening on port ${PORT}`);
 });
