@@ -155,7 +155,7 @@ export default function MessengerHub({
 
         // Dispatch outbound message to Meta via our backend relay
         try {
-          await fetch('/api/send-reply', {
+          await fetch(`${import.meta.env.VITE_API_URL || ''}/api/send-reply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

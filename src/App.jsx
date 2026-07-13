@@ -692,7 +692,7 @@ export default function App() {
       
       if (smsEnabled && adminPhone) {
         try {
-          const response = await fetch('/api/send-sms', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/send-sms`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to: adminPhone, message: messageBody })
