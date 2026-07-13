@@ -131,6 +131,17 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileDevice(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
 
   // Fetch initial data from Supabase
   useEffect(() => {
@@ -971,6 +982,105 @@ export default function App() {
     );
   }
 
+  const renderAppContent = () => (
+    <div className="app-container">
+      {/* Sidebar Navigation */}
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onLogout={handleLogout}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+
+      {/* Main Panel Area */}
+      <div className="main-wrapper">
+        {/* Header Bar */}
+        <Header 
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          notificationCount={notifications.length}
+          clearNotifications={clearNotifications}
+          onAddBookingClick={() => {
+            setBookingToEdit(null);
+            setPrefilledBookingData(null);
+            setIsBookingDrawerOpen(true);
+          }}
+          onHamburgerClick={() => setIsSidebarOpen(true)}
+        />
+
+        {/* Dynamic Tab Pane Render */}
+        <main className="content-area">
+          {renderTabContent()}
+        </main>
+      </div>
+
+      {/* Custom Global Floating Toast Notification for Simulated Leads */}
+      <div 
+        className={`live-toast ${activeToast ? 'show' : ''}`} 
+        style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}
+        onClick={handleToastClick}
+      >
+        {activeToast && (
+          <>
+            <div className="live-toast-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div className="live-toast-content">
+              <span className="live-toast-title">New Facebook DM Inquiry</span>
+              <span className="live-toast-body">
+                From <strong>{activeToast.name}</strong>. Click here to parse lead details automatically!
+              </span>
+            </div>
+            <button 
+              className="live-toast-close" 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setActiveToast(null); 
+              }}
+            >
+              ×
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Slide-out Form Drawers */}
+      <BookingDrawer 
+        key={bookingToEdit?.id || (prefilledBookingData ? 'prefilled' : 'new')}
+        isOpen={isBookingDrawerOpen}
+        onClose={() => {
+          setIsBookingDrawerOpen(false);
+          setBookingToEdit(null);
+          setPrefilledBookingData(null);
+        }}
+        bookingToEdit={bookingToEdit}
+        prefilledData={prefilledBookingData}
+        onSave={handleSaveBooking}
+      />
+
+      <TaskDrawer 
+        key={taskToEdit?.id || 'new-task'}
+        isOpen={isTaskDrawerOpen}
+        onClose={() => {
+          setIsTaskDrawerOpen(false);
+          setTaskToEdit(null);
+        }}
+        taskToEdit={taskToEdit}
+        bookings={bookings}
+        onSave={handleSaveTask}
+      />
+    </div>
+  );
+
+  if (isMobileDevice) {
+    return renderAppContent();
+  }
+
   return (
     <div className="simulator-wrapper">
       {/* Top simulator toolbar */}
@@ -1056,100 +1166,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="app-container">
-            {/* Sidebar Navigation */}
-            <Sidebar 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              onLogout={handleLogout}
-              isSidebarOpen={isSidebarOpen}
-              setIsSidebarOpen={setIsSidebarOpen}
-            />
-
-            {/* Main Panel Area */}
-            <div className="main-wrapper">
-              {/* Header Bar */}
-              <Header 
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                theme={theme}
-                toggleTheme={toggleTheme}
-                notificationCount={notifications.length}
-                clearNotifications={clearNotifications}
-                onAddBookingClick={() => {
-                  setBookingToEdit(null);
-                  setPrefilledBookingData(null);
-                  setIsBookingDrawerOpen(true);
-                }}
-                onHamburgerClick={() => setIsSidebarOpen(true)}
-              />
-
-              {/* Dynamic Tab Pane Render */}
-              <main className="content-area">
-                {renderTabContent()}
-              </main>
-            </div>
-          </div>
-
-          {previewDevice === 'iphone' && <div className="device-iphone-bar" />}
-
-          {/* Custom Global Floating Toast Notification for Simulated Leads */}
-          <div 
-            className={`live-toast ${activeToast ? 'show' : ''}`} 
-            style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000 }}
-            onClick={handleToastClick}
-          >
-            {activeToast && (
-              <>
-                <div className="live-toast-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                <div className="live-toast-content">
-                  <span className="live-toast-title">New Facebook DM Inquiry</span>
-                  <span className="live-toast-body">
-                    From <strong>{activeToast.name}</strong>. Click here to parse lead details automatically!
-                  </span>
-                </div>
-                <button 
-                  className="live-toast-close" 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setActiveToast(null); 
-                  }}
-                >
-                  ×
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Slide-out Form Drawers */}
-          <BookingDrawer 
-            key={bookingToEdit?.id || (prefilledBookingData ? 'prefilled' : 'new')}
-            isOpen={isBookingDrawerOpen}
-            onClose={() => {
-              setIsBookingDrawerOpen(false);
-              setBookingToEdit(null);
-              setPrefilledBookingData(null);
-            }}
-            bookingToEdit={bookingToEdit}
-            prefilledData={prefilledBookingData}
-            onSave={handleSaveBooking}
-          />
-
-          <TaskDrawer 
-            key={taskToEdit?.id || 'new-task'}
-            isOpen={isTaskDrawerOpen}
-            onClose={() => {
-              setIsTaskDrawerOpen(false);
-              setTaskToEdit(null);
-            }}
-            taskToEdit={taskToEdit}
-            bookings={bookings}
-            onSave={handleSaveTask}
-          />
+          {renderAppContent()}
         </div>
       </div>
     </div>
